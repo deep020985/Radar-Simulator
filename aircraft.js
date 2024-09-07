@@ -6,22 +6,27 @@ let aircraftBlips = []; // To store all created aircraft blips
 let radarCenter = { x: radarScope.offsetWidth / 2, y: radarScope.offsetHeight / 2 }; // Track radar center
 
 class AircraftBlip {
-    constructor(callsign, heading, speed, x, y) {
+    constructor(callsign, heading, speed, altitude, x, y) {
         this.callsign = callsign;
         this.heading = heading;
         this.speed = speed;
+        this.targetSpeed = speed;  // Target speed for gradual speed change
+        this.altitude = altitude || 10000;  // Default to 10,000 feet
+        this.targetAltitude = this.altitude;  // Target altitude for gradual climb/descent
+        this.verticalClimbDescendRate = 3000;  // Default rate of 3000 feet per minute
+        this.speedChangeRate = 10;  // Speed change rate: 10 knots per second
         this.position = { x, y };
         this.targetHeading = heading;
         this.headingChangeRate = 2; // Degrees per second
         this.element = this.createBlipElement();
-        this.label = this.createLabelElement(); // Create label element
-        this.line = this.createLineElement(); // Create leading line element
+        this.label = this.createLabelElement();
+        this.line = this.createLineElement();
         this.history = [];
         this.historyDots = [];
         this.createHistoryDots();
         this.updateBlipPosition();
-
     }
+
 
     // Create the blip element for the aircraft
     createBlipElement() {
@@ -36,11 +41,11 @@ class AircraftBlip {
         return blip;
     }
 
-    // Create the label element that displays callsign and speed
+    // Update label to show callsign, speed, and altitude in the desired format
     createLabelElement() {
         const label = document.createElement('div');
         label.className = 'aircraft-label';
-        label.innerHTML = `${this.callsign}<br>N${this.speed}`;
+        label.innerHTML = `${this.callsign}<br>A${Math.round(this.altitude / 100)}<br>N${this.speed}`;  // Format speed and altitude
         label.style.position = 'absolute';
         label.style.color = 'goldenrod';
         label.style.zIndex = '3';
@@ -103,7 +108,8 @@ class AircraftBlip {
     }
 
     // Update label to show callsign and speed with a 90-degree perpendicular offset to the heading
-    updateLabelPosition() {
+    updateLabelPosition(blip) {
+        
         // Calculate the offset angle to be perpendicular to the heading
         const angleRad = (this.heading - 180) * Math.PI / 180;
         const labelXOffset = 90 * Math.cos(angleRad); // Distance from the blip to the label in x-direction
@@ -118,7 +124,7 @@ class AircraftBlip {
         this.label.style.top = `${labelY}px`;
 
         // Update label content
-        this.label.innerHTML = `${this.callsign}<br>${this.speed}kts`;
+        this.label.innerHTML = `${this.callsign}<br>A${Math.round(this.altitude / 100)}<br>N${this.speed}`;  // Round altitude    
     }
 
 
@@ -188,6 +194,7 @@ class AircraftBlip {
 
 
     // Update the blip's position and handle turning gradually
+    // Update the blip's position and handle turning gradually
     move() {
         const speedMetersPerSecond = (this.speed / zoomLevel) * 0.514444;
         const distancePerUpdateMeters = speedMetersPerSecond * (updateInterval / 1000);
@@ -196,22 +203,18 @@ class AircraftBlip {
         // Handle gradual heading change without shortest turn logic
         if (this.heading !== this.targetHeading) {
             let headingDiff = (this.targetHeading - this.heading + 360) % 360;
-
-            // Check the direction of the turn
             const turnRate = this.headingChangeRate * (updateInterval / 1000);
 
-            // If turnRight is true, the aircraft must turn right (clockwise), even if left is shorter
-            // If turnRight is false, the aircraft must turn left (counterclockwise), even if right is shorter
             if (this.turnRight === true) {
                 if (headingDiff > 180) {
-                    headingDiff = 360 - headingDiff; // Force a longer right turn if shorter turn is left
+                    headingDiff = 360 - headingDiff;
                     this.heading = (this.heading + turnRate) % 360;
                 } else {
                     this.heading = (this.heading + turnRate) % 360;
                 }
             } else if (this.turnRight === false) {
                 if (headingDiff <= 180) {
-                    headingDiff = 360 - headingDiff; // Force a longer left turn if shorter turn is right
+                    headingDiff = 360 - headingDiff;
                     this.heading = (this.heading - turnRate + 360) % 360;
                 } else {
                     this.heading = (this.heading - turnRate + 360) % 360;
@@ -221,7 +224,6 @@ class AircraftBlip {
             // Ensure heading wraps around between 0 and 360
             this.heading = (this.heading + 360) % 360;
 
-            // If heading is close enough to the target heading, snap to target heading
             if (Math.abs(this.heading - this.targetHeading) <= turnRate) {
                 this.heading = this.targetHeading;
             }
@@ -235,16 +237,49 @@ class AircraftBlip {
         this.position.x += deltaX * zoomLevel;
         this.position.y -= deltaY * zoomLevel;
 
+        // Adjust altitude gradually towards the targetAltitude
+        const verticalChangePerSecond = this.verticalClimbDescendRate / 60;  // Feet per second
+        const verticalChangePerUpdate = verticalChangePerSecond * (updateInterval / 1000);  // Change per update
+
+        if (this.altitude !== this.targetAltitude) {
+            const altitudeDiff = this.targetAltitude - this.altitude;
+            if (Math.abs(altitudeDiff) <= verticalChangePerUpdate) {
+                this.altitude = this.targetAltitude;  // Snap to target altitude if close enough
+            } else {
+                this.altitude += Math.sign(altitudeDiff) * verticalChangePerUpdate;  // Gradual altitude change
+            }
+
+            // Update control box and label
+            updateControlBox(this);
+            this.updateLabelPosition();
+        }
+
+        // Adjust speed gradually towards the targetSpeed
+        const speedChangePerUpdate = this.speedChangeRate * (updateInterval / 1000);  // Change per update
+
+        if (this.speed !== this.targetSpeed) {
+            const speedDiff = this.targetSpeed - this.speed;
+            if (Math.abs(speedDiff) <= speedChangePerUpdate) {
+                this.speed = this.targetSpeed;  // Snap to target speed if close enough
+            } else {
+                this.speed += Math.sign(speedDiff) * speedChangePerUpdate;  // Gradual speed change
+            }
+
+            // Update control box and label
+            updateControlBox(this);
+            this.updateLabelPosition();
+        }
+
         // Update the blip's position on the radar
         this.updateBlipPosition();
-
-        // Update the heading display in the control box as the aircraft turns
-        updateControlBox(this);
     }
 
-    // Set the target heading for a gradual turn
     setTargetHeading(newHeading) {
         this.targetHeading = newHeading;
+    }
+
+    setTargetSpeed(newSpeed) {
+        this.targetSpeed = newSpeed;
     }
 }
 
@@ -269,7 +304,7 @@ function createAircraftBlip() {
     const callsign = document.getElementById('callsignInput').value.trim();
     const heading = parseInt(document.getElementById('headingInput').value, 10);
     const speed = parseInt(document.getElementById('speedInput').value, 10);
-
+    const altitude = parseInt(document.getElementById('altitudeInput').value, 10);  // Get altitude
 
     // Check if callsign is already in use
     const existingBlip = aircraftBlips.find(blip => blip.callsign === callsign);
@@ -283,19 +318,27 @@ function createAircraftBlip() {
         return;
     }
 
-    const blip = new AircraftBlip(callsign, heading, speed, selectedPosition.x, selectedPosition.y);
+    // Create the blip
+    const blip = new AircraftBlip(callsign, heading, speed, altitude, selectedPosition.x, selectedPosition.y);
     aircraftBlips.push(blip);
+
+    // Create the control box before any updates
     createControlBox(blip);
 }
+
 
 // Create control box for aircraft
 function createControlBox(blip) {
     const controlPanel = document.getElementById('controlPanel');
     const controlBox = document.createElement('div');
     controlBox.className = 'control-box';
-    controlBox.id = `controlBox_${blip.callsign}`;  // Give each control box a unique ID
+    controlBox.id = `controlBox_${blip.callsign}`;  // Unique ID
+
     controlBox.innerHTML = `
-        <div><b>${blip.callsign}</b>      Hdg: <span id="heading_${blip.callsign}">${blip.heading}</span>° <span id="speed_${blip.callsign}">${blip.speed}kts</span> </div>
+        <div><b>${blip.callsign}</b> Hdg: <span id="heading_${blip.callsign}">${blip.heading}</span>°
+         <span id="altitude_${blip.callsign}">A${blip.altitude / 100}</span>  <!-- A<altitude in hundreds> format -->
+        <span id="speed_${blip.callsign}">N${blip.speed}</span>  <!-- N<speed> format -->
+        </div>
         <input type="text" id="commandInput_${blip.callsign}" placeholder="Enter command (e.g., L090, S350)">
         <span id="lastCommand_${blip.callsign}" class="last-command"></span>
     `;
@@ -314,7 +357,22 @@ function createControlBox(blip) {
 
 // Function to update the speed and heading in the control box
 function updateControlBox(blip) {
-    document.getElementById(`heading_${blip.callsign}`).innerHTML = blip.heading;
+    const headingElement = document.getElementById(`heading_${blip.callsign}`);
+    const speedElement = document.getElementById(`speed_${blip.callsign}`);
+    const altitudeElement = document.getElementById(`altitude_${blip.callsign}`);
+
+    // Only update if the elements exist
+    if (headingElement) {
+        headingElement.innerHTML = blip.heading;
+    }
+
+    if (speedElement) {
+        speedElement.innerHTML = `N${blip.speed}`;
+    }
+
+    if (altitudeElement) {
+        altitudeElement.innerHTML = `A${Math.round(blip.altitude / 100)}`;  // Round altitude
+    }
 }
 
 
@@ -399,13 +457,14 @@ function processCommand(blip) {
     const command = input.value.trim().toUpperCase();
     const headingMatch = command.match(/^([LR])(\d{3})$/);
     const speedMatch = command.match(/^S(\d+)$/);
+    const altitudeMatch = command.match(/^H(\d{1,2})$/);
+    const verticalRateMatch = command.match(/^V(\d+)$/);
 
     if (headingMatch) {
         const direction = headingMatch[1];
         const targetHeading = parseInt(headingMatch[2], 10);
         let turnDirection = null;
 
-        // Set target heading based on direction
         if (direction === 'L') {
             blip.turnRight = false;  // Turn left (counterclockwise)
             blip.setTargetHeading(targetHeading);
@@ -419,26 +478,68 @@ function processCommand(blip) {
         updateStatusBar(`Aircraft ${blip.callsign} turning ${turnDirection} heading ${blip.targetHeading}°`);
     } else if (speedMatch) {
         const speed = parseInt(speedMatch[1], 10);
-        blip.speed = speed;
+        blip.setTargetSpeed(speed);  // Set target speed for gradual change
         updateStatusBar(`Aircraft ${blip.callsign} speed set to ${speed} knots.`);
-        // Update the speed in the control box
-        document.getElementById(`speed_${blip.callsign}`).innerHTML = `      ${blip.speed}kts`;
+        
+        const speedElement = document.getElementById(`speed_${blip.callsign}`);
+        if (speedElement) {
+            speedElement.textContent = `N${blip.speed}`;  // Update speed in control box
+        }
+        
+        blip.updateLabelPosition();  // Update label with new speed
+    } else if (altitudeMatch) {
+        const altitude = parseInt(altitudeMatch[1], 10) * 100;
+        blip.targetAltitude = altitude;  // Set target altitude for gradual change
+        updateStatusBar(`Aircraft ${blip.callsign} target altitude set to ${altitude} feet.`);
+        
+        const altitudeElement = document.getElementById(`altitude_${blip.callsign}`);
+        if (altitudeElement) {
+            altitudeElement.textContent = `A${blip.targetAltitude / 100}`;  // Update altitude in control box
+        }
+    } else if (verticalRateMatch) {
+        const rate = parseInt(verticalRateMatch[1], 10);
+        blip.verticalClimbDescendRate = rate;  // Set vertical climb/descent rate
+        updateStatusBar(`Aircraft ${blip.callsign} vertical rate set to ${rate} feet per minute.`);
     } else if (command === "RH") {
-        // Print the current heading to the console and status bar
-        //console.log(`Aircraft ${blip.callsign} heading: ${blip.heading}°`);
         updateStatusBar(`Aircraft ${blip.callsign} heading: ${blip.heading}°`);
+    } else if (command === "DEL") {
+        deleteAircraft(blip);
+        updateStatusBar(`Aircraft ${blip.callsign} deleted.`);
     } else {
         updateStatusBar(`Invalid command: ${command}.`);
     }
 
-    // Update the last command display
-    const lastCommandDisplay = document.getElementById(`lastCommand_${blip.callsign}`);
-    lastCommandDisplay.textContent = ` ${command}`;
-
-    input.value = ''; // Clear the input after processing
+    // Clear the command input field
+    input.value = "";
 }
 
-// Calculate position based on radar center
+
+
+// To delete the aircraft
+function deleteAircraft(blip) {
+    // Remove the aircraft blip from the aircraftBlips array
+    aircraftBlips = aircraftBlips.filter(b => b !== blip);
+
+    // Remove the blip element from the DOM
+    panContainer.removeChild(blip.element);
+
+    // Remove the label element from the DOM
+    panContainer.removeChild(blip.label);
+
+    // Remove the line element from the DOM
+    panContainer.removeChild(blip.line);
+
+    // Remove the history dots
+    blip.historyDots.forEach(dot => panContainer.removeChild(dot));
+
+    // Remove the control box from the control panel
+    const controlBox = document.getElementById(`controlBox_${blip.callsign}`);
+    if (controlBox) {
+        document.getElementById('controlPanel').removeChild(controlBox);
+    }
+}
+
+
 // Calculate position based on radar's original center and panned position
 function calculatePosition(clientX, clientY) {
     const rect = radarScope.getBoundingClientRect();
