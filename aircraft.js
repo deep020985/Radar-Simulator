@@ -509,8 +509,11 @@ function processCommand(blip) {
         updateStatusBar(`Invalid command: ${command}.`);
     }
 
-    // Clear the command input field
-    input.value = "";
+    // Update last command display
+    const lastCommandDisplay = document.getElementById(`lastCommand_${blip.callsign}`);
+    lastCommandDisplay.textContent = `${command}`;
+
+    input.value = '';  // Clear input after processing
 }
 
 
