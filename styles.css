@@ -1,3 +1,5 @@
+
+
 @keyframes rotate {
     from {
         transform: rotate(0deg);
@@ -24,6 +26,7 @@ body, html {
 
 .control-button {
     color: black;
+    border-radius: 4px;
     cursor: pointer;
     font-family: Arial, sans-serif;
     /* Set the same font for control buttons */
@@ -77,9 +80,14 @@ body, html {
 }
 
 .dropdown {
-    color: #080808;
+    border-radius: 10px;
+    color: black;
+    border-radius: 4px;
     cursor: pointer;
-    padding: 5px;
+    font-family: Arial, sans-serif;
+    /* Set the same font for control buttons */
+    font-size: 14px;
+    /* Set the same font size */
 
 }
 
@@ -254,6 +262,7 @@ body, html {
     box-sizing: border-box; /* Ensure padding is included in width */
     user-select: none; /* Prevents text selection when clicking */
     overflow: visible; /* Ensure no overflow issues */
+    border-radius: 4px;
 }
 
 /* Ensure input boxes inside control boxes are styled correctly */
@@ -263,6 +272,7 @@ body, html {
     padding: 2px; /* Add padding for usability */
     font-size: 12px; /* Match font size */
     box-sizing: border-box; /* Include padding in width calculation */
+    border-radius: 4px;
 }
 
 
@@ -319,7 +329,8 @@ body, html {
     background-color: white;
     border: 1px solid #ccc;
     list-style: none;
-    padding: 5px 0;
+    padding: 2px 0;
+    border-radius: 10px;
     margin: 0;
     z-index: 1000;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
@@ -334,6 +345,8 @@ body, html {
 .context-menu li:hover {
     background-color: #007bff;
     color: white;
+    border-radius: 10px;
+    
 }
 
 
