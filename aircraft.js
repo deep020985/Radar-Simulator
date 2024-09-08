@@ -517,6 +517,10 @@ function processCommand(blip) {
 }
 
 
+// Cancel button logic
+document.getElementById('cancelAircraftButton').addEventListener('click', closeAircraftDialog);
+
+
 
 // To delete the aircraft
 function deleteAircraft(blip) {
