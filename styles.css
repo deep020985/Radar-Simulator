@@ -74,13 +74,13 @@ body, html {
 .distance-marker.visible {
     display: block;
     /* Show markers when toggled */
-
 }
 
 .dropdown {
     color: #080808;
     cursor: pointer;
     padding: 5px;
+
 }
 
 .menu-bar {
@@ -137,7 +137,7 @@ body, html {
 }
 
 .runway {
-    background-color: yellow;
+    background-color: white;
     height: 4px;
     position: absolute;
     transform-origin: center center;
@@ -179,7 +179,7 @@ body, html {
 .aircraft-blip {
     width: 6px;
     height: 6px;
-    background-color: white;
+    background-color: yellow;
     position: absolute;
     z-index: 2;
     /* Ensure the blip is above the trail dots */
@@ -189,7 +189,7 @@ body, html {
 .history-dot {
     width: 2px;
     height: 2px;
-    background-color: white;
+    background-color: yellow;
     border-radius: 50%; /* Makes the dots circular */
     position: absolute;
     z-index: 1;
@@ -212,8 +212,6 @@ body, html {
     background-color: #f44336;
     /* Red for inactive state */
 }
-
-
 
 
 /* Container for splitting the screen */
@@ -267,29 +265,52 @@ body, html {
     box-sizing: border-box; /* Include padding in width calculation */
 }
 
+
+
 .dialog {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: white;
-    border: 1px solid #ccc;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     padding: 10px;
+    width: 200px;
     z-index: 1000;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
 }
 
 .dialog-content {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
 }
 
 .dialog input {
     padding: 5px;
     margin-top: 5px;
     width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
 }
+
+.dialog button {
+    padding: 5px;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s ease;
+}
+
+.dialog button:hover {
+    background-color: #0056b3;
+}
+
 
 
 /* Custom context menu styling */

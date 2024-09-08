@@ -34,7 +34,7 @@ class AircraftBlip {
         blip.className = 'aircraft-blip';
         blip.style.width = '6px';
         blip.style.height = '6px';
-        blip.style.backgroundColor = 'white';
+        blip.style.backgroundColor = 'yellow';
         blip.style.position = 'absolute';
         blip.style.zIndex = '2';
         panContainer.appendChild(blip);
@@ -47,7 +47,7 @@ class AircraftBlip {
         label.className = 'aircraft-label';
         label.innerHTML = `${this.callsign}<br>A${Math.round(this.altitude / 100)}<br>N${this.speed}`;  // Format speed and altitude
         label.style.position = 'absolute';
-        label.style.color = 'goldenrod';
+        label.style.color = 'yellow';
         label.style.zIndex = '3';
         panContainer.appendChild(label);
         return label;
@@ -74,7 +74,7 @@ class AircraftBlip {
             dot.style.position = 'absolute';
             dot.style.width = '1px';
             dot.style.height = '1px';
-            dot.style.backgroundColor = 'white';
+            dot.style.backgroundColor = 'yellow';
             dot.style.zIndex = '1';
             panContainer.appendChild(dot);
             this.historyDots.push(dot);
@@ -304,7 +304,7 @@ function createAircraftBlip() {
     const callsign = document.getElementById('callsignInput').value.trim();
     const heading = parseInt(document.getElementById('headingInput').value, 10);
     const speed = parseInt(document.getElementById('speedInput').value, 10);
-    const altitude = parseInt(document.getElementById('altitudeInput').value, 10);  // Get altitude
+    const altitude = parseInt(document.getElementById('altitudeInput').value * 100, 10);  // Get altitude
 
     // Check if callsign is already in use
     const existingBlip = aircraftBlips.find(blip => blip.callsign === callsign);
@@ -519,7 +519,6 @@ function processCommand(blip) {
 
 // Cancel button logic
 document.getElementById('cancelAircraftButton').addEventListener('click', closeAircraftDialog);
-
 
 
 // To delete the aircraft
