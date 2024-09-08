@@ -260,6 +260,9 @@ class AircraftBlip {
                 }
             }
 
+            // Update control box
+            updateControlBox(this);
+
             // Ensure heading wraps around between 0 and 360
             this.heading = (this.heading + 360) % 360;
 
@@ -778,6 +781,9 @@ function processCommand(blip) {
 
     input.value = '';  // Clear input after processing
 }
+
+
+
 
 
 
