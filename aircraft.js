@@ -6,8 +6,9 @@ let aircraftBlips = []; // To store all created aircraft blips
 let radarCenter = { x: radarScope.offsetWidth / 2, y: radarScope.offsetHeight / 2 }; // Track radar center
 
 class AircraftBlip {
-    constructor(callsign, heading, speed, altitude, x, y) {
+    constructor(callsign, heading, speed, altitude, x, y, ssrCode) {
         this.callsign = callsign;
+        this.ssrCode = ssrCode; // Default SSR is 0000
         this.heading = heading;
         this.speed = speed;
         this.targetSpeed = speed;  // Target speed for gradual speed change
@@ -45,11 +46,17 @@ class AircraftBlip {
     createLabelElement() {
         const label = document.createElement('div');
         label.className = 'aircraft-label';
-        label.innerHTML = `${this.callsign}<br>A${Math.round(this.altitude / 100)}<br>N${this.speed}`;  // Format speed and altitude
+        label.innerHTML = `${this.callsign}<br>3-${this.ssrCode}<br>A${Math.round(this.altitude / 100)}<br>N${this.speed}`;
         label.style.position = 'absolute';
         label.style.color = 'yellow';
         label.style.zIndex = '3';
         panContainer.appendChild(label);
+
+        this.label = label;  // Store the label element
+
+        // Update the label info based on the initial SSR code
+        this.updateLabelInfo(this);
+
         return label;
     }
 
@@ -109,7 +116,7 @@ class AircraftBlip {
 
     // Update label to show callsign and speed with a 90-degree perpendicular offset to the heading
     updateLabelPosition(blip) {
-        
+
         // Calculate the offset angle to be perpendicular to the heading
         const angleRad = (this.heading - 180) * Math.PI / 180;
         const labelXOffset = 90 * Math.cos(angleRad); // Distance from the blip to the label in x-direction
@@ -123,8 +130,24 @@ class AircraftBlip {
         this.label.style.left = `${labelX}px`;
         this.label.style.top = `${labelY}px`;
 
-        // Update label content
-        this.label.innerHTML = `${this.callsign}<br>A${Math.round(this.altitude / 100)}<br>N${this.speed}`;  // Round altitude    
+        //Update Label Info
+        this.updateLabelInfo(this);
+
+    }
+
+    updateLabelInfo(blip) {
+        // Only display label info if SSR code is not 0000
+        if (this.ssrCode !== '0000') {
+            this.label.innerHTML = `${this.callsign}<br>3-${this.ssrCode}<br>A${Math.round(this.altitude / 100)}<br>N${this.speed}`;
+        } else {
+            this.label.innerHTML = `N${this.speed}`; // Display only speed if SSR code is 0000
+        }
+    }
+
+    setSSRCode(newSSRCode) {
+        this.ssrCode = newSSRCode;
+        this.updateLabelInfo();
+        updateControlBox(this);  // Ensure the control box reflects the SSR code change
     }
 
 
@@ -298,33 +321,112 @@ function closeAircraftDialog() {
     dialog.style.display = 'none';
 }
 
-
-// Create aircraft blip
-function createAircraftBlip() {
-    const callsign = document.getElementById('callsignInput').value.trim();
-    const heading = parseInt(document.getElementById('headingInput').value, 10);
-    const speed = parseInt(document.getElementById('speedInput').value, 10);
-    const altitude = parseInt(document.getElementById('altitudeInput').value * 100, 10);  // Get altitude
-
-    // Check if callsign is already in use
+function validateCallsign() {
+    const callsignInput = document.getElementById('callsignInput');
+    const callsign = callsignInput.value.trim();
     const existingBlip = aircraftBlips.find(blip => blip.callsign === callsign);
-    if (existingBlip) {
-        alert('Callsign already in use. Please choose a different callsign.');
-        return;
+
+    if (existingBlip || !callsign) {
+        callsignInput.style.backgroundColor = '#f8d7da'; // Light red color
+        return false;
     }
 
-    if (!callsign || isNaN(heading) || isNaN(speed)) {
-        alert('Please enter valid values.');
-        return;
+    callsignInput.style.backgroundColor = ''; // Reset to default
+    return true;
+}
+
+function validateSsrCode() {
+    const ssrInput = document.getElementById('ssrInput');
+    const ssrCode = ssrInput.value.trim();
+
+    if (!/^[0-7]{4}$/.test(ssrCode)) {
+        ssrInput.style.backgroundColor = '#f8d7da'; // Light red color
+        return false;
     }
 
-    // Create the blip
-    const blip = new AircraftBlip(callsign, heading, speed, altitude, selectedPosition.x, selectedPosition.y);
+    ssrInput.style.backgroundColor = ''; // Reset to default
+    return true;
+}
+
+function validateHeading() {
+    const headingInput = document.getElementById('headingInput');
+    const heading = parseInt(headingInput.value, 10);
+
+    if (isNaN(heading) || heading < 1 || heading > 360) {
+        headingInput.style.backgroundColor = '#f8d7da'; // Light red color
+        return false;
+    }
+
+    headingInput.style.backgroundColor = ''; // Reset to default
+    return true;
+}
+
+function validateSpeed() {
+    const speedInput = document.getElementById('speedInput');
+    const speed = parseInt(speedInput.value, 10);
+
+    if (isNaN(speed)) {
+        speedInput.style.backgroundColor = '#f8d7da'; // Light red color
+        return false;
+    }
+
+    speedInput.style.backgroundColor = ''; // Reset to default
+    return true;
+}
+
+function validateAltitude() {
+    const altitudeInput = document.getElementById('altitudeInput');
+    const altitude = parseInt(altitudeInput.value * 100, 10); // Convert to feet
+
+    if (isNaN(altitude)) {
+        altitudeInput.style.backgroundColor = '#f8d7da'; // Light red color
+        return false;
+    }
+
+    altitudeInput.style.backgroundColor = ''; // Reset to default
+    return true;
+}
+
+
+// Function to Create Aircraft blip after validating inputs from Dialog Box
+function createAircraftBlip() {
+    // Validate all fields before creating the aircraft
+    const isCallsignValid = validateCallsign();
+    const isSsrCodeValid = validateSsrCode();
+    const isHeadingValid = validateHeading();
+    const isSpeedValid = validateSpeed();
+    const isAltitudeValid = validateAltitude();
+
+    if (!isCallsignValid || !isSsrCodeValid || !isHeadingValid || !isSpeedValid || !isAltitudeValid) {
+        // Prevent dialog from closing by returning false
+        //alert('Please correct the highlighted fields.');
+        return false;
+    }
+
+    // Get input values
+    const callsignInput = document.getElementById('callsignInput');
+    const ssrInput = document.getElementById('ssrInput');
+    const headingInput = document.getElementById('headingInput');
+    const speedInput = document.getElementById('speedInput');
+    const altitudeInput = document.getElementById('altitudeInput');
+
+    const callsign = callsignInput.value.trim();
+    const ssrCode = ssrInput.value.trim(); // Read as string for validation
+    const heading = parseInt(headingInput.value, 10);
+    const speed = parseInt(speedInput.value, 10);
+    const altitude = parseInt(altitudeInput.value * 100, 10);  // Convert to feet
+
+    // Create the blip if all validations pass
+    const blip = new AircraftBlip(callsign, heading, speed, altitude, selectedPosition.x, selectedPosition.y, ssrCode);
     aircraftBlips.push(blip);
 
     // Create the control box before any updates
     createControlBox(blip);
+
+    // Return true to indicate successful creation
+    return true;
 }
+
 
 
 // Create control box for aircraft
@@ -335,7 +437,7 @@ function createControlBox(blip) {
     controlBox.id = `controlBox_${blip.callsign}`;  // Unique ID
 
     controlBox.innerHTML = `
-        <div><b>${blip.callsign}</b> Hdg: <span id="heading_${blip.callsign}">${blip.heading}</span>°
+        <div><b>${blip.callsign} 3-${blip.ssrCode}</b> Hdg: <span id="heading_${blip.callsign}">${blip.heading}</span>°
          <span id="altitude_${blip.callsign}">A${blip.altitude / 100}</span>  <!-- A<altitude in hundreds> format -->
         <span id="speed_${blip.callsign}">N${blip.speed}</span>  <!-- N<speed> format -->
         </div>
@@ -360,31 +462,44 @@ function updateControlBox(blip) {
     const headingElement = document.getElementById(`heading_${blip.callsign}`);
     const speedElement = document.getElementById(`speed_${blip.callsign}`);
     const altitudeElement = document.getElementById(`altitude_${blip.callsign}`);
+    const callsignElement = document.querySelector(`#controlBox_${blip.callsign} b`);
 
-    // Only update if the elements exist
-    if (headingElement) {
-        headingElement.innerHTML = blip.heading;
-    }
+    // Update heading, speed, and altitude
+    if (headingElement) headingElement.innerHTML = blip.heading;
+    if (speedElement) speedElement.innerHTML = `N${blip.speed}`;
+    if (altitudeElement) altitudeElement.innerHTML = `A${Math.round(blip.altitude / 100)}`;
 
-    if (speedElement) {
-        speedElement.innerHTML = `N${blip.speed}`;
-    }
-
-    if (altitudeElement) {
-        altitudeElement.innerHTML = `A${Math.round(blip.altitude / 100)}`;  // Round altitude
-    }
+    // Update callsign and SSR code
+    if (callsignElement) callsignElement.innerHTML = `${blip.callsign} 3-${blip.ssrCode}`;
 }
 
 
+// Cancel button logic
+document.getElementById('cancelAircraftButton').addEventListener('click', closeAircraftDialog);
 
+// Event listener for closing aircraft dialog through escape key
+document.getElementById('aircraftDialog').addEventListener('keypress', (event) => {
+    if (event.key === 'Escape') {
+        closeAircraftDialog(); // Close the dialog when "Esc" is pressed
+    }
+});
+
+// Event listener for creating aircraft from click on Create Button
+document.getElementById('createAircraftButton').addEventListener('click', () => {
+    if (createAircraftBlip()) {  // Attempt to create aircraft blip
+        closeAircraftDialog();   // Close dialog if creation was successful
+    }
+});
 
 // Event listener for creating aircraft from dialog or context menu
 document.getElementById('aircraftDialog').addEventListener('keypress', (event) => {
     if (event.key === 'Enter') {
-        createAircraftBlip();
-        closeAircraftDialog();
+        if (createAircraftBlip()) {
+            closeAircraftDialog();
+        }
     }
 });
+
 
 // Context menu for creating aircraft
 const radarContextMenu = document.getElementById('radarContextMenu');
@@ -459,6 +574,8 @@ function processCommand(blip) {
     const speedMatch = command.match(/^S(\d+)$/);
     const altitudeMatch = command.match(/^H(\d{1,2})$/);
     const verticalRateMatch = command.match(/^V(\d+)$/);
+    const ssrMatch = command.match(/^SSR([0-7]{4})$/); // SSR should be a 4-digit octal number
+
 
     if (headingMatch) {
         const direction = headingMatch[1];
@@ -480,18 +597,18 @@ function processCommand(blip) {
         const speed = parseInt(speedMatch[1], 10);
         blip.setTargetSpeed(speed);  // Set target speed for gradual change
         updateStatusBar(`Aircraft ${blip.callsign} speed set to ${speed} knots.`);
-        
+
         const speedElement = document.getElementById(`speed_${blip.callsign}`);
         if (speedElement) {
             speedElement.textContent = `N${blip.speed}`;  // Update speed in control box
         }
-        
-        blip.updateLabelPosition();  // Update label with new speed
+
+        blip.updateLabelInfo();  // Update label with new speed
     } else if (altitudeMatch) {
         const altitude = parseInt(altitudeMatch[1], 10) * 100;
         blip.targetAltitude = altitude;  // Set target altitude for gradual change
         updateStatusBar(`Aircraft ${blip.callsign} target altitude set to ${altitude} feet.`);
-        
+
         const altitudeElement = document.getElementById(`altitude_${blip.callsign}`);
         if (altitudeElement) {
             altitudeElement.textContent = `A${blip.targetAltitude / 100}`;  // Update altitude in control box
@@ -500,6 +617,10 @@ function processCommand(blip) {
         const rate = parseInt(verticalRateMatch[1], 10);
         blip.verticalClimbDescendRate = rate;  // Set vertical climb/descent rate
         updateStatusBar(`Aircraft ${blip.callsign} vertical rate set to ${rate} feet per minute.`);
+    } else if (ssrMatch) {
+        const newSSRCode = ssrMatch[1];  // Get the SSR code from the command
+        blip.setSSRCode(newSSRCode);  // Update the aircraft's SSR code
+        updateStatusBar(`Aircraft ${blip.callsign} SSR code set to 3-${newSSRCode}`);
     } else if (command === "RH") {
         updateStatusBar(`Aircraft ${blip.callsign} heading: ${blip.heading}°`);
     } else if (command === "DEL") {
@@ -517,8 +638,7 @@ function processCommand(blip) {
 }
 
 
-// Cancel button logic
-document.getElementById('cancelAircraftButton').addEventListener('click', closeAircraftDialog);
+
 
 
 // To delete the aircraft
