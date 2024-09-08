@@ -33,14 +33,24 @@ class AircraftBlip {
     createBlipElement() {
         const blip = document.createElement('div');
         blip.className = 'aircraft-blip';
-        blip.style.width = '6px';
-        blip.style.height = '6px';
-        blip.style.backgroundColor = 'yellow';
+        
+        // Apply additional class for plus sign if SSR code is '0000'
+        if (this.ssrCode === '0000') {
+            blip.classList.add('plus-sign'); // Add the plus sign class
+            blip.classList.remove('aircraft-blip'); // Remove the default box class
+        } else {
+            blip.classList.add('aircraft-blip'); // Ensure the default box style is applied
+            blip.classList.remove('plus-sign'); // Remove the plus sign class if it was previously added
+        }
+        
         blip.style.position = 'absolute';
         blip.style.zIndex = '2';
+        
         panContainer.appendChild(blip);
         return blip;
     }
+    
+    
 
     // Update label to show callsign, speed, and altitude in the desired format
     createLabelElement() {
@@ -146,9 +156,15 @@ class AircraftBlip {
 
     setSSRCode(newSSRCode) {
         this.ssrCode = newSSRCode;
-        this.updateLabelInfo();
-        updateControlBox(this);  // Ensure the control box reflects the SSR code change
+        // Remove the existing blip
+        this.element.remove();
+        // Create a new blip based on the new SSR code
+        this.element = this.createBlipElement();
+        this.updateBlipPosition();  // Ensure the new blip is positioned correctly
+        this.updateLabelInfo();  // Update label info as well
+        updateControlBox(this);  // Update the control box to reflect the SSR code change
     }
+    
 
 
     // Update the line position and draw it between the blip and the label
@@ -325,7 +341,7 @@ function validateCallsign() {
     const callsignInput = document.getElementById('callsignInput');
     const callsign = callsignInput.value.trim();
     const existingBlip = aircraftBlips.find(blip => blip.callsign === callsign);
-
+    
     if (existingBlip || !callsign) {
         callsignInput.style.backgroundColor = '#f8d7da'; // Light red color
         return false;
@@ -338,15 +354,18 @@ function validateCallsign() {
 function validateSsrCode() {
     const ssrInput = document.getElementById('ssrInput');
     const ssrCode = ssrInput.value.trim();
+    const existingSSR = aircraftBlips.find(blip => blip.ssrCode === ssrCode && ssrCode !== '0000');
 
-    if (!/^[0-7]{4}$/.test(ssrCode)) {
-        ssrInput.style.backgroundColor = '#f8d7da'; // Light red color
+    // Validate SSR code format and ensure it is unique unless it is '0000'
+    if (!/^[0-7]{4}$/.test(ssrCode) || existingSSR) {
+        ssrInput.style.backgroundColor = '#f8d7da'; // Light red color for error
         return false;
     }
 
     ssrInput.style.backgroundColor = ''; // Reset to default
     return true;
 }
+
 
 function validateHeading() {
     const headingInput = document.getElementById('headingInput');
@@ -566,77 +585,6 @@ function logHeadings() {
     });
 }
 
-// Aircraft Commands
-function processCommand(blip) {
-    const input = document.getElementById(`commandInput_${blip.callsign}`);
-    const command = input.value.trim().toUpperCase();
-    const headingMatch = command.match(/^([LR])(\d{3})$/);
-    const speedMatch = command.match(/^S(\d+)$/);
-    const altitudeMatch = command.match(/^H(\d{1,2})$/);
-    const verticalRateMatch = command.match(/^V(\d+)$/);
-    const ssrMatch = command.match(/^SSR([0-7]{4})$/); // SSR should be a 4-digit octal number
-
-
-    if (headingMatch) {
-        const direction = headingMatch[1];
-        const targetHeading = parseInt(headingMatch[2], 10);
-        let turnDirection = null;
-
-        if (direction === 'L') {
-            blip.turnRight = false;  // Turn left (counterclockwise)
-            blip.setTargetHeading(targetHeading);
-            turnDirection = `Left`;
-        } else if (direction === 'R') {
-            blip.turnRight = true;  // Turn right (clockwise)
-            blip.setTargetHeading(targetHeading);
-            turnDirection = `Right`;
-        }
-
-        updateStatusBar(`Aircraft ${blip.callsign} turning ${turnDirection} heading ${blip.targetHeading}°`);
-    } else if (speedMatch) {
-        const speed = parseInt(speedMatch[1], 10);
-        blip.setTargetSpeed(speed);  // Set target speed for gradual change
-        updateStatusBar(`Aircraft ${blip.callsign} speed set to ${speed} knots.`);
-
-        const speedElement = document.getElementById(`speed_${blip.callsign}`);
-        if (speedElement) {
-            speedElement.textContent = `N${blip.speed}`;  // Update speed in control box
-        }
-
-        blip.updateLabelInfo();  // Update label with new speed
-    } else if (altitudeMatch) {
-        const altitude = parseInt(altitudeMatch[1], 10) * 100;
-        blip.targetAltitude = altitude;  // Set target altitude for gradual change
-        updateStatusBar(`Aircraft ${blip.callsign} target altitude set to ${altitude} feet.`);
-
-        const altitudeElement = document.getElementById(`altitude_${blip.callsign}`);
-        if (altitudeElement) {
-            altitudeElement.textContent = `A${blip.targetAltitude / 100}`;  // Update altitude in control box
-        }
-    } else if (verticalRateMatch) {
-        const rate = parseInt(verticalRateMatch[1], 10);
-        blip.verticalClimbDescendRate = rate;  // Set vertical climb/descent rate
-        updateStatusBar(`Aircraft ${blip.callsign} vertical rate set to ${rate} feet per minute.`);
-    } else if (ssrMatch) {
-        const newSSRCode = ssrMatch[1];  // Get the SSR code from the command
-        blip.setSSRCode(newSSRCode);  // Update the aircraft's SSR code
-        updateStatusBar(`Aircraft ${blip.callsign} SSR code set to 3-${newSSRCode}`);
-    } else if (command === "RH") {
-        updateStatusBar(`Aircraft ${blip.callsign} heading: ${blip.heading}°`);
-    } else if (command === "DEL") {
-        deleteAircraft(blip);
-        updateStatusBar(`Aircraft ${blip.callsign} deleted.`);
-    } else {
-        updateStatusBar(`Invalid command: ${command}.`);
-    }
-
-    // Update last command display
-    const lastCommandDisplay = document.getElementById(`lastCommand_${blip.callsign}`);
-    lastCommandDisplay.textContent = `${command}`;
-
-    input.value = '';  // Clear input after processing
-}
-
 
 
 
@@ -754,6 +702,82 @@ document.getElementById('label').addEventListener('click', () => {
 });
 
 
+// Aircraft Commands
+// Aircraft Commands
+function processCommand(blip) {
+    const input = document.getElementById(`commandInput_${blip.callsign}`);
+    const command = input.value.trim().toUpperCase();
+    const headingMatch = command.match(/^([LR])(\d{3})$/);
+    const speedMatch = command.match(/^S(\d+)$/);
+    const altitudeMatch = command.match(/^H(\d{1,2})$/);
+    const verticalRateMatch = command.match(/^V(\d+)$/);
+    const ssrMatch = command.match(/^SSR([0-7]{4})$/); // SSR should be a 4-digit octal number
+
+    if (headingMatch) {
+        const direction = headingMatch[1];
+        const targetHeading = parseInt(headingMatch[2], 10);
+        let turnDirection = null;
+
+        if (direction === 'L') {
+            blip.turnRight = false;  // Turn left (counterclockwise)
+            blip.setTargetHeading(targetHeading);
+            turnDirection = `Left`;
+        } else if (direction === 'R') {
+            blip.turnRight = true;  // Turn right (clockwise)
+            blip.setTargetHeading(targetHeading);
+            turnDirection = `Right`;
+        }
+
+        updateStatusBar(`Aircraft ${blip.callsign} turning ${turnDirection} heading ${blip.targetHeading}°`);
+    } else if (speedMatch) {
+        const speed = parseInt(speedMatch[1], 10);
+        blip.setTargetSpeed(speed);  // Set target speed for gradual change
+        updateStatusBar(`Aircraft ${blip.callsign} speed set to ${speed} knots.`);
+
+        const speedElement = document.getElementById(`speed_${blip.callsign}`);
+        if (speedElement) {
+            speedElement.textContent = `N${blip.speed}`;  // Update speed in control box
+        }
+
+        blip.updateLabelInfo();  // Update label with new speed
+    } else if (altitudeMatch) {
+        const altitude = parseInt(altitudeMatch[1], 10) * 100;
+        blip.targetAltitude = altitude;  // Set target altitude for gradual change
+        updateStatusBar(`Aircraft ${blip.callsign} target altitude set to ${altitude} feet.`);
+
+        const altitudeElement = document.getElementById(`altitude_${blip.callsign}`);
+        if (altitudeElement) {
+            altitudeElement.textContent = `A${blip.targetAltitude / 100}`;  // Update altitude in control box
+        }
+    } else if (verticalRateMatch) {
+        const rate = parseInt(verticalRateMatch[1], 10);
+        blip.verticalClimbDescendRate = rate;  // Set vertical climb/descent rate
+        updateStatusBar(`Aircraft ${blip.callsign} vertical rate set to ${rate} feet per minute.`);
+    } else if (ssrMatch) {
+        const newSSRCode = ssrMatch[1];  // Get the SSR code from the command
+        const existingSSR = aircraftBlips.find(blip => blip.ssrCode === newSSRCode);
+
+        if (existingSSR && newSSRCode !== '0000') {
+            updateStatusBar(`Duplicate SSR code. Aircraft ${existingSSR.callsign} already squawking ${existingSSR.ssrCode}`);
+        } else {
+            blip.setSSRCode(newSSRCode);  // Update the aircraft's SSR code
+            updateStatusBar(`Aircraft ${blip.callsign} SSR code set to 3-${newSSRCode}`);
+        }
+    } else if (command === "RH") {
+        updateStatusBar(`Aircraft ${blip.callsign} heading: ${blip.heading}°`);
+    } else if (command === "DEL") {
+        deleteAircraft(blip);
+        updateStatusBar(`Aircraft ${blip.callsign} deleted.`);
+    } else {
+        updateStatusBar(`Invalid command: ${command}.`);
+    }
+
+    // Update last command display
+    const lastCommandDisplay = document.getElementById(`lastCommand_${blip.callsign}`);
+    lastCommandDisplay.textContent = `${command}`;
+
+    input.value = '';  // Clear input after processing
+}
 
 
 

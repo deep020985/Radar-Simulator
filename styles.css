@@ -184,14 +184,46 @@ body, html {
 
 /* aircraft.css */
 
+/* Style for the plus sign */
+.plus-sign {
+    width: 8px; /* Increase width to accommodate the plus sign */
+    height: 8px; /* Increase height to accommodate the plus sign */
+    position: relative;
+    background: transparent;
+}
+
+.plus-sign::before,
+.plus-sign::after {
+    content: '';
+    position: absolute;
+    background-color: yellow;
+}
+
+.plus-sign::before {
+    width: 2px; /* Thickness of the vertical line */
+    height: 100%;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+}
+
+.plus-sign::after {
+    height: 2px; /* Thickness of the horizontal line */
+    width: 100%;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+}
+
+/* Default aircraft blip style */
 .aircraft-blip {
     width: 6px;
     height: 6px;
     background-color: yellow;
     position: absolute;
     z-index: 2;
-    /* Ensure the blip is above the trail dots */
 }
+
 
 
 .history-dot {

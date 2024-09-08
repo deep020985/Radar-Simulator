@@ -1,0 +1,15 @@
+Commands for use of Radsim:
+
+RH : Report Heading
+
+R090 or L090: Turn Right or Left Heading 090
+
+H20: To climb or descend to 2000 ft
+
+V4000: To set the rate of climb/descend to 4000 ft per minute
+
+S600: To set the speed to 600 knots
+
+DEl: To delete the aircraft
+
+SSR1000: Set the squawk code to 1000

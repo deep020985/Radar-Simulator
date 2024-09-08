@@ -5,7 +5,7 @@
 // V4000: To set the rate of climb/descend to 4000 ft per minute
 // S600: To set the speed to 600 knots
 // DEl: To delete the aircraft
-
+// SSR1000: Set the squawk code to 1000
 
 // Initialize the SpeechRecognition API
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
