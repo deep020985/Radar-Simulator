@@ -4,6 +4,7 @@ const loggingInterval = 1000; // Logging interval in milliseconds
 let selectedPosition = { x: 0, y: 0 }; // Initialize selectedPosition
 let aircraftBlips = []; // To store all created aircraft blips
 let radarCenter = { x: radarScope.offsetWidth / 2, y: radarScope.offsetHeight / 2 }; // Track radar center
+let isPaused = false; // to initialise the exercise pause and resume button
 
 class AircraftBlip {
     constructor(callsign, heading, speed, altitude, x, y, ssrCode) {
@@ -19,6 +20,8 @@ class AircraftBlip {
         this.position = { x, y };
         this.targetHeading = heading;
         this.headingChangeRate = 2; // Degrees per second
+        this.turning = false;  // New property to manage the turning state
+        //this.turnRight = null; // Track the direction of turn
         this.element = this.createBlipElement();
         this.label = this.createLabelElement();
         this.line = this.createLineElement();
@@ -241,33 +244,35 @@ class AircraftBlip {
 
         // Handle gradual heading change without shortest turn logic
         if (this.heading !== this.targetHeading) {
-            let headingDiff = (this.targetHeading - this.heading + 360) % 360;
-            const turnRate = this.headingChangeRate * (updateInterval / 1000);
+            if (this.turnRight !== null) { // Only turn if turnRight is not null
+                let headingDiff = (this.targetHeading - this.heading + 360) % 360;
+                const turnRate = this.headingChangeRate * (updateInterval / 1000);
 
-            if (this.turnRight === true) {
-                if (headingDiff > 180) {
-                    headingDiff = 360 - headingDiff;
-                    this.heading = (this.heading + turnRate) % 360;
-                } else {
-                    this.heading = (this.heading + turnRate) % 360;
+                if (this.turnRight === true) {
+                    if (headingDiff > 180) {
+                        headingDiff = 360 - headingDiff;
+                        this.heading = (this.heading + turnRate) % 360;
+                    } else {
+                        this.heading = (this.heading + turnRate) % 360;
+                    }
+                } else if (this.turnRight === false) {
+                    if (headingDiff <= 180) {
+                        headingDiff = 360 - headingDiff;
+                        this.heading = (this.heading - turnRate + 360) % 360;
+                    } else {
+                        this.heading = (this.heading - turnRate + 360) % 360;
+                    }
                 }
-            } else if (this.turnRight === false) {
-                if (headingDiff <= 180) {
-                    headingDiff = 360 - headingDiff;
-                    this.heading = (this.heading - turnRate + 360) % 360;
-                } else {
-                    this.heading = (this.heading - turnRate + 360) % 360;
+
+                // Update control box
+                updateControlBox(this);
+
+                // Ensure heading wraps around between 0 and 360
+                this.heading = (this.heading + 360) % 360;
+
+                if (Math.abs(this.heading - this.targetHeading) <= turnRate) {
+                    this.heading = this.targetHeading;
                 }
-            }
-
-            // Update control box
-            updateControlBox(this);
-
-            // Ensure heading wraps around between 0 and 360
-            this.heading = (this.heading + 360) % 360;
-
-            if (Math.abs(this.heading - this.targetHeading) <= turnRate) {
-                this.heading = this.targetHeading;
             }
         }
 
@@ -459,12 +464,17 @@ function createControlBox(blip) {
     controlBox.id = `controlBox_${blip.callsign}`;  // Unique ID
 
     controlBox.innerHTML = `
-        <div><b>${blip.callsign} 3-${blip.ssrCode}</b> Hdg: <span id="heading_${blip.callsign}">${blip.heading}</span>°
-         <span id="altitude_${blip.callsign}">A${blip.altitude / 100}</span>  <!-- A<altitude in hundreds> format -->
-        <span id="speed_${blip.callsign}">N${blip.speed}</span>  <!-- N<speed> format -->
+        <div>
+            <span class="info-box callsign-box">${blip.callsign}</span>
+            <span class="info-box ssr-box">3-${blip.ssrCode}</span>
+            <span class="info-box heading-box"><span id="heading_${blip.callsign}">${blip.heading}°</span></span>
+            <span class="info-box altitude-box">A<span id="altitude_${blip.callsign}">${Math.round(blip.altitude / 100)}</span></span>
+            <span class="info-box speed-box">N<span id="speed_${blip.callsign}">${blip.speed}</span></span>
         </div>
-        <input type="text" id="commandInput_${blip.callsign}" placeholder="Enter command (e.g., L090, S350)">
-        <span id="lastCommand_${blip.callsign}" class="last-command"></span>
+        <div class="command-input-container">
+            <input type="text" id="commandInput_${blip.callsign}" placeholder="Enter command (e.g., L090, S350)">
+            <span id="lastCommand_${blip.callsign}" class="last-command"></span>
+        </div>
     `;
 
     controlPanel.appendChild(controlBox);
@@ -479,21 +489,25 @@ function createControlBox(blip) {
 
 
 
+
 // Function to update the speed and heading in the control box
 function updateControlBox(blip) {
     const headingElement = document.getElementById(`heading_${blip.callsign}`);
     const speedElement = document.getElementById(`speed_${blip.callsign}`);
     const altitudeElement = document.getElementById(`altitude_${blip.callsign}`);
-    const callsignElement = document.querySelector(`#controlBox_${blip.callsign} b`);
+    const callsignElement = document.querySelector(`#controlBox_${blip.callsign} .callsign-box`);
+    const ssrElement = document.querySelector(`#controlBox_${blip.callsign} .ssr-box`);
 
     // Update heading, speed, and altitude
-    if (headingElement) headingElement.innerHTML = blip.heading;
-    if (speedElement) speedElement.innerHTML = `N${blip.speed}`;
-    if (altitudeElement) altitudeElement.innerHTML = `A${Math.round(blip.altitude / 100)}`;
+    if (headingElement) headingElement.innerHTML = `${blip.heading}°`;
+    if (speedElement) speedElement.innerHTML = `${blip.speed}`;
+    if (altitudeElement) altitudeElement.innerHTML = `${Math.round(blip.altitude / 100)}`;
 
     // Update callsign and SSR code
-    if (callsignElement) callsignElement.innerHTML = `${blip.callsign} 3-${blip.ssrCode}`;
+    if (callsignElement) callsignElement.innerHTML = blip.callsign;
+    if (ssrElement) ssrElement.innerHTML = `3-${blip.ssrCode}`;
 }
+
 
 
 // Cancel button logic
@@ -571,24 +585,60 @@ function panRadar(dx, dy) {
 }
 
 
-// Move aircraft blips periodically
-function moveAircraftBlips() {
-    aircraftBlips.forEach(blip => blip.move());
-    setTimeout(moveAircraftBlips, updateInterval);
+// Function to pause or resume the exercise
+function togglePause() {
+    const pauseButton = document.getElementById('pauseButton');
+    const rangeRingsContainer = document.querySelector('.range-rings');
+    isPaused = !isPaused;
+
+    if (isPaused) {
+        pauseButton.textContent = 'Resume';
+        updateStatusBar('Exercise paused.');
+        disableControlPanel();
+        
+        rangeRingsContainer.style.animationPlayState = 'paused'; // Stop radar rings rotation
+    } else {
+        pauseButton.textContent = 'Pause';
+        updateStatusBar('Exercise resumed.');
+        enableControlPanel();
+
+        rangeRingsContainer.style.animationPlayState = 'running'; // Resume radar rings rotation
+    
+        moveAircraftBlips(); // Resume aircraft movements
+    }
 }
 
-// Start logging headings every second
-// setInterval(logHeadings, loggingInterval);
-
-moveAircraftBlips();
-
-function logHeadings() {
-    aircraftBlips.forEach(blip => {
-        console.log(`Aircraft ${blip.callsign} heading: ${blip.heading}°`);
+// Function to disable the control panel inputs
+function disableControlPanel() {
+    const inputs = document.querySelectorAll('#controlPanel input');
+    inputs.forEach(input => {
+        input.disabled = true;
     });
 }
 
+// Function to enable the control panel inputs
+function enableControlPanel() {
+    const inputs = document.querySelectorAll('#controlPanel input');
+    inputs.forEach(input => {
+        input.disabled = false;
+    });
+}
 
+// Attach event listener to the pause button
+document.getElementById('pauseButton').addEventListener('click', togglePause);
+
+
+// Move aircraft blips periodically
+function moveAircraftBlips() {
+    if (!isPaused) {
+        aircraftBlips.forEach(blip => blip.move());
+        setTimeout(moveAircraftBlips, updateInterval);
+    }
+}
+
+
+
+moveAircraftBlips();
 
 
 
@@ -704,8 +754,6 @@ document.getElementById('label').addEventListener('click', () => {
     });
 });
 
-
-// Aircraft Commands
 // Aircraft Commands
 function processCommand(blip) {
     const input = document.getElementById(`commandInput_${blip.callsign}`);
@@ -716,6 +764,7 @@ function processCommand(blip) {
     const verticalRateMatch = command.match(/^V(\d+)$/);
     const ssrMatch = command.match(/^SSR([0-7]{4})$/); // SSR should be a 4-digit octal number
 
+    // Handle heading command
     if (headingMatch) {
         const direction = headingMatch[1];
         const targetHeading = parseInt(headingMatch[2], 10);
@@ -732,7 +781,10 @@ function processCommand(blip) {
         }
 
         updateStatusBar(`Aircraft ${blip.callsign} turning ${turnDirection} heading ${blip.targetHeading}°`);
-    } else if (speedMatch) {
+    } 
+    
+    // Handle speed command
+    else if (speedMatch) {
         const speed = parseInt(speedMatch[1], 10);
         blip.setTargetSpeed(speed);  // Set target speed for gradual change
         updateStatusBar(`Aircraft ${blip.callsign} speed set to ${speed} knots.`);
@@ -743,7 +795,10 @@ function processCommand(blip) {
         }
 
         blip.updateLabelInfo();  // Update label with new speed
-    } else if (altitudeMatch) {
+    } 
+    
+    // Handle altitude command
+    else if (altitudeMatch) {
         const altitude = parseInt(altitudeMatch[1], 10) * 100;
         blip.targetAltitude = altitude;  // Set target altitude for gradual change
         updateStatusBar(`Aircraft ${blip.callsign} target altitude set to ${altitude} feet.`);
@@ -752,11 +807,17 @@ function processCommand(blip) {
         if (altitudeElement) {
             altitudeElement.textContent = `A${blip.targetAltitude / 100}`;  // Update altitude in control box
         }
-    } else if (verticalRateMatch) {
+    } 
+    
+    // Handle vertical climb/descent rate command
+    else if (verticalRateMatch) {
         const rate = parseInt(verticalRateMatch[1], 10);
         blip.verticalClimbDescendRate = rate;  // Set vertical climb/descent rate
         updateStatusBar(`Aircraft ${blip.callsign} vertical rate set to ${rate} feet per minute.`);
-    } else if (ssrMatch) {
+    } 
+    
+    //Handle SSR code changes commands
+    else if (ssrMatch) {
         const newSSRCode = ssrMatch[1];  // Get the SSR code from the command
         const existingSSR = aircraftBlips.find(blip => blip.ssrCode === newSSRCode);
 
@@ -766,12 +827,27 @@ function processCommand(blip) {
             blip.setSSRCode(newSSRCode);  // Update the aircraft's SSR code
             updateStatusBar(`Aircraft ${blip.callsign} SSR code set to 3-${newSSRCode}`);
         }
-    } else if (command === "RH") {
+    } 
+    
+    // Handle Report Heading command
+    else if (command === "RH") {
         updateStatusBar(`Aircraft ${blip.callsign} heading: ${blip.heading}°`);
-    } else if (command === "DEL") {
+    } 
+    
+    // Handle aircraft Delete command
+    else if (command === "DEL") {
         deleteAircraft(blip);
         updateStatusBar(`Aircraft ${blip.callsign} deleted.`);
-    } else {
+    } 
+
+    // Handle "ST" command to stop turning
+    else if (command === 'ST') {
+        blip.turnRight = null; // Stop the turn by setting turnRight to null
+        updateStatusBar(`Aircraft ${blip.callsign} stopping turn.`);
+    }
+    
+    //Handle invalid command
+    else {
         updateStatusBar(`Invalid command: ${command}.`);
     }
 
@@ -781,6 +857,8 @@ function processCommand(blip) {
 
     input.value = '';  // Clear input after processing
 }
+
+
 
 
 

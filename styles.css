@@ -120,13 +120,16 @@ body, html {
     /* Same width as specific markers */
 }
 
+
 .range-rings {
     animation: rotate 4s linear infinite;
+    animation-play-state: running; /* Ensure animation starts running */
     border-radius: 100%;
     height: 100%;
     position: absolute;
     width: 100%;
 }
+
 
 #radarScope {
     height: calc(100% - 20px);
@@ -287,25 +290,82 @@ body, html {
 
 
 /* Each aircraft control box */
+/* Control box styling */
 .control-box {
     border: 1px solid #ccc;
-    padding: 5px;
+    padding: 2px;
     background-color: #e0e0e0;
-    box-sizing: border-box; /* Ensure padding is included in width */
+    box-sizing: border-box;
+    border-radius: 4px;
+    margin-bottom: 1px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     user-select: none; /* Prevents text selection when clicking */
     overflow: visible; /* Ensure no overflow issues */
-    border-radius: 4px;
 }
 
-/* Ensure input boxes inside control boxes are styled correctly */
-.control-box input {
-    width: 70%; /* Make input fill the box minus padding */
-    margin: 2px 0; /* Add margin for better spacing */
-    padding: 2px; /* Add padding for usability */
-    font-size: 12px; /* Match font size */
-    box-sizing: border-box; /* Include padding in width calculation */
+/* Common style for each info box */
+.info-box {
+    display: inline-block;
+    padding: 2px 5px;
     border-radius: 4px;
+    margin: 1px;
+    font-size: 12px;
+    color: black; /* Text color */
 }
+
+/* Different background colors for each type of info */
+.callsign-box {
+    background-color: #007bff; /* Blue for callsign */
+    font-size: 16px;
+    font-weight: bold;
+    color: white; /* Text color */
+}
+
+.ssr-box {
+    background-color: lightblue; /* Green for SSR code */
+}
+
+.heading-box {
+    background-color: lightblue; /* Yellow for heading */
+}
+
+.altitude-box {
+    background-color: lightblue; /* Red for altitude */
+}
+
+.speed-box {
+    background-color: lightblue; /* Cyan for speed */
+}
+
+/* Flex container for input and last command */
+.command-input-container {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Space between the input and the last command */
+}
+
+/* Style for the input field */
+.control-box input {
+    width: 60%;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 12px;
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+/* Style for the last command */
+.last-command {
+    font-size: 12px;
+    color: #333;
+    background-color: #f0f0f0;
+    padding: 5px;
+    border-radius: 4px;
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
 
 
 .dialog {
