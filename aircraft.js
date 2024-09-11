@@ -411,6 +411,12 @@ function validateCallsign() {
 function validateSsrCode() {
     const ssrInput = document.getElementById('ssrInput');
     const ssrCode = ssrInput.value.trim();
+
+    // Skip duplication check for emergency SSR codes (7500, 7600, 7700)
+    if (ssrCode === '7500' || ssrCode === '7600' || ssrCode === '7700') {
+        ssrInput.style.backgroundColor = ''; // Reset to default background if valid
+        return true; // Valid SSR, allow emergency codes
+    }
     const existingSSR = aircraftBlips.find(blip => blip.ssrCode === ssrCode && ssrCode !== '0000');
 
     // Validate SSR code format and ensure it is unique unless it is '0000'
@@ -868,15 +874,22 @@ function processCommand(blip) {
     //Handle SSR code changes commands
     else if (ssrMatch) {
         const newSSRCode = ssrMatch[1];  // Get the SSR code from the command
-        const existingSSR = aircraftBlips.find(blip => blip.ssrCode === newSSRCode);
-
-        if (existingSSR && newSSRCode !== '0000') {
-            updateStatusBar(`Duplicate SSR code. Aircraft ${existingSSR.callsign} already squawking ${existingSSR.ssrCode}`);
-        } else {
-            blip.setSSRCode(newSSRCode);  // Update the aircraft's SSR code
-            updateStatusBar(`Aircraft ${blip.callsign} SSR code set to 3-${newSSRCode}`);
+    
+        // Allow duplication for 7500, 7600, and 7700
+        if (newSSRCode !== '7500' && newSSRCode !== '7600' && newSSRCode !== '7700') {
+            const existingSSR = aircraftBlips.find(blip => blip.ssrCode === newSSRCode);
+    
+            if (existingSSR && newSSRCode !== '0000') {
+                updateStatusBar(`Duplicate SSR code. Aircraft ${existingSSR.callsign} already squawking ${existingSSR.ssrCode}`);
+                return;
+            }
         }
-    } 
+        
+        // Update the aircraft's SSR code if it's not a duplicate or is an emergency code
+        blip.setSSRCode(newSSRCode);
+        updateStatusBar(`Aircraft ${blip.callsign} SSR code set to 3-${newSSRCode}`);
+    }
+    
     
     // Handle Report Heading command
     else if (command === "RH") {
