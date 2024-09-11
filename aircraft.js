@@ -72,6 +72,12 @@ class AircraftBlip {
         label.style.position = 'absolute';
         label.style.color = 'yellow';
         label.style.zIndex = '3';
+
+        // Check the global labelsVisible flag and hide the label if it's false
+    if (!labelsVisible) {
+        label.style.display = 'none';
+    }
+
         panContainer.appendChild(label);
 
         this.label = label;  // Store the label element
@@ -90,13 +96,19 @@ class AircraftBlip {
         line.style.height = '1px';
         line.style.backgroundColor = 'grey';
         line.style.zIndex = '1';
+
+        // Check the global labelsVisible flag and hide the line if it's false
+    if (!labelsVisible) {
+        line.style.display = 'none';
+    }
+
         panContainer.appendChild(line);
         return line;
     }
 
     // Create history dot elements and append to the radar
     createHistoryDots() {
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 25; i++) {
             const dot = document.createElement('div');
             dot.className = 'history-dot';
             dot.style.opacity = 0; // Initially set opacity to 0
