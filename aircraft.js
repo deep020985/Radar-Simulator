@@ -9,34 +9,36 @@ let isPaused = false; // to initialise the exercise pause and resume button
 class AircraftBlip {
     constructor(callsign, heading, speed, altitude, x, y, ssrCode) {
         this.callsign = callsign;
-    this.ssrCode = ssrCode;
-    this.heading = heading;
-    this.speed = speed;
-    this.targetSpeed = speed;
-    this.altitude = altitude || 10000;
-    this.targetAltitude = this.altitude;
-    this.verticalClimbDescendRate = 3000;
-    this.speedChangeRate = 10;
-    this.position = { x, y };
-    this.targetHeading = heading;
-    this.headingChangeRate = 2;
-    this.turning = false;
-    
-    // Create elements (blip, label, line)
-    this.element = this.createBlipElement();
-    this.label = this.createLabelElement();
-    this.line = this.createLineElement();
-    this.history = [];
-    this.historyDots = [];
+        this.ssrCode = ssrCode;
+        this.heading = heading;
+        this.speed = speed;
+        this.targetSpeed = speed;
+        this.altitude = altitude || 10000;
+        this.targetAltitude = this.altitude;
+        this.verticalClimbDescendRate = 3000;
+        this.speedChangeRate = 10;
+        this.position = { x, y };
+        this.targetHeading = heading;
+        this.headingChangeRate = 2;
+        this.turning = false;
+        this.orbitLeft = false;  // New property for orbiting left
+        this.orbitRight = false; // New property for orbiting right
 
-    // Create history dots
-    this.createHistoryDots();
+        // Create elements (blip, label, line)
+        this.element = this.createBlipElement();
+        this.label = this.createLabelElement();
+        this.line = this.createLineElement();
+        this.history = [];
+        this.historyDots = [];
 
-    // Update positions
-    this.updateBlipPosition();
+        // Create history dots
+        this.createHistoryDots();
 
-    // Ensure the color is updated based on SSR
-    this.updateColorBasedOnSSR(); // Call after elements are created
+        // Update positions
+        this.updateBlipPosition();
+
+        // Ensure the color is updated based on SSR
+        this.updateColorBasedOnSSR(); // Call after elements are created
     }
 
 
@@ -44,7 +46,7 @@ class AircraftBlip {
     createBlipElement() {
         const blip = document.createElement('div');
         blip.className = 'aircraft-blip';
-        
+
         // Apply additional class for plus sign if SSR code is '0000'
         if (this.ssrCode === '0000') {
             blip.classList.add('plus-sign'); // Add the plus sign class
@@ -53,16 +55,16 @@ class AircraftBlip {
             blip.classList.add('aircraft-blip'); // Ensure the default box style is applied
             blip.classList.remove('plus-sign'); // Remove the plus sign class if it was previously added
         }
-        
+
         blip.style.position = 'absolute';
         blip.style.zIndex = '2';
-        
+
         panContainer.appendChild(blip);
-        
+
         return blip;
     }
-    
-    
+
+
 
     // Update label to show callsign, speed, and altitude in the desired format
     createLabelElement() {
@@ -74,9 +76,9 @@ class AircraftBlip {
         label.style.zIndex = '3';
 
         // Check the global labelsVisible flag and hide the label if it's false
-    if (!labelsVisible) {
-        label.style.display = 'none';
-    }
+        if (!labelsVisible) {
+            label.style.display = 'none';
+        }
 
         panContainer.appendChild(label);
 
@@ -98,9 +100,9 @@ class AircraftBlip {
         line.style.zIndex = '1';
 
         // Check the global labelsVisible flag and hide the line if it's false
-    if (!labelsVisible) {
-        line.style.display = 'none';
-    }
+        if (!labelsVisible) {
+            line.style.display = 'none';
+        }
 
         panContainer.appendChild(line);
         return line;
@@ -189,7 +191,7 @@ class AircraftBlip {
         this.updateColorBasedOnSSR(); // Apply the color change
         updateControlBox(this);  // Update the control box to reflect the SSR code change
     }
-    
+
     updateColorBasedOnSSR() {
         // Check for emergency codes and set colors
         if (this.ssrCode === '7500' || this.ssrCode === '7600' || this.ssrCode === '7700') {
@@ -197,7 +199,7 @@ class AircraftBlip {
             this.label.style.color = 'red';
             this.line.style.backgroundColor = 'red';
             this.element.style.backgroundColor = 'red';
-    
+
             // Change history dots to red
             this.historyDots.forEach(dot => {
                 dot.style.backgroundColor = 'red';
@@ -207,16 +209,16 @@ class AircraftBlip {
             this.label.style.color = 'yellow';
             this.line.style.backgroundColor = 'grey';
             this.element.style.backgroundColor = 'yellow';
-    
+
             // Revert history dots to yellow
             this.historyDots.forEach(dot => {
                 dot.style.backgroundColor = 'yellow';
             });
         }
     }
-    
-    
-    
+
+
+
 
 
     // Update the line position and draw it between the blip and the label
@@ -285,54 +287,65 @@ class AircraftBlip {
 
 
     // Update the blip's position and handle turning gradually
-    // Update the blip's position and handle turning gradually
-    move() {
+    move(headingOnly = false) {
         const speedMetersPerSecond = (this.speed / zoomLevel) * 0.514444;
         const distancePerUpdateMeters = speedMetersPerSecond * (updateInterval / 1000);
         const distancePerUpdateNauticalMiles = distancePerUpdateMeters / 1852;
-
-        // Handle gradual heading change without shortest turn logic
-        if (this.heading !== this.targetHeading) {
-            if (this.turnRight !== null) { // Only turn if turnRight is not null
-                let headingDiff = (this.targetHeading - this.heading + 360) % 360;
-                const turnRate = this.headingChangeRate * (updateInterval / 1000);
-
-                if (this.turnRight === true) {
-                    if (headingDiff > 180) {
-                        headingDiff = 360 - headingDiff;
-                        this.heading = (this.heading + turnRate) % 360;
-                    } else {
-                        this.heading = (this.heading + turnRate) % 360;
-                    }
-                } else if (this.turnRight === false) {
-                    if (headingDiff <= 180) {
-                        headingDiff = 360 - headingDiff;
-                        this.heading = (this.heading - turnRate + 360) % 360;
-                    } else {
-                        this.heading = (this.heading - turnRate + 360) % 360;
-                    }
+    
+        // Handle orbit left
+        if (this.orbitLeft) {
+            this.heading = (this.heading - this.headingChangeRate * (headingUpdateInterval / 1000) + 360) % 360;
+        }
+    
+        // Handle orbit right
+        if (this.orbitRight) {
+            this.heading = (this.heading + this.headingChangeRate * (headingUpdateInterval / 1000)) % 360;
+        }
+    
+        // Handle gradual heading change if not orbiting
+        if (!this.orbitLeft && !this.orbitRight && this.heading !== this.targetHeading) {
+            let headingDiff = (this.targetHeading - this.heading + 360) % 360;
+            const turnRate = this.headingChangeRate * (headingUpdateInterval / 1000);
+    
+            if (this.turnRight === true) {
+                if (headingDiff > 180) {
+                    headingDiff = 360 - headingDiff;
+                    this.heading = (this.heading + turnRate) % 360;
+                } else {
+                    this.heading = (this.heading + turnRate) % 360;
                 }
-
-                // Update control box
-                updateControlBox(this);
-
-                // Ensure heading wraps around between 0 and 360
-                this.heading = (this.heading + 360) % 360;
-
-                if (Math.abs(this.heading - this.targetHeading) <= turnRate) {
-                    this.heading = this.targetHeading;
+            } else if (this.turnRight === false) {
+                if (headingDiff <= 180) {
+                    headingDiff = 360 - headingDiff;
+                    this.heading = (this.heading - turnRate + 360) % 360;
+                } else {
+                    this.heading = (this.heading - turnRate + 360) % 360;
                 }
             }
+    
+            this.heading = (this.heading + 360) % 360;
+    
+            if (Math.abs(this.heading - this.targetHeading) <= turnRate) {
+                this.heading = this.targetHeading;  // Snap to the target heading
+            }
         }
-
-        // Calculate movement based on the current heading
+    
+        // Update heading in control box every 1 second
+        updateControlBox(this);
+    
+        // If headingOnly is true, don't update the position on the radar
+        if (headingOnly) {
+            return;
+        }
+    
+        // Update position based on the current heading (every 4 seconds)
         const angleRad = (this.heading - 90) * Math.PI / 180;
         const deltaX = distancePerUpdateNauticalMiles * Math.cos(angleRad);
         const deltaY = distancePerUpdateNauticalMiles * Math.sin(angleRad);
-
+    
         this.position.x += deltaX * zoomLevel;
         this.position.y -= deltaY * zoomLevel;
-
+    
         // Adjust altitude gradually towards the targetAltitude
         const verticalChangePerSecond = this.verticalClimbDescendRate / 60;  // Feet per second
         const verticalChangePerUpdate = verticalChangePerSecond * (updateInterval / 1000);  // Change per update
@@ -369,6 +382,29 @@ class AircraftBlip {
         // Update the blip's position on the radar
         this.updateBlipPosition();
     }
+    
+    
+
+    // Function to start orbiting left
+    startOrbitLeft() {
+        this.orbitLeft = true;
+        this.orbitRight = false; // Stop orbiting right if already orbiting right
+        this.turnRight = null; // Disable turning logic
+    }
+
+    // Function to start orbiting right
+    startOrbitRight() {
+        this.orbitLeft = false;
+        this.orbitRight = true; // Stop orbiting left if already orbiting left
+        this.turnRight = null; // Disable turning logic
+    }
+
+    // Function to stop turning (stopping the orbit)
+    stopTurn() {
+        this.orbitLeft = false;
+        this.orbitRight = false;
+        this.turnRight = null; // Also stop any heading change logic
+    }
 
     setTargetHeading(newHeading) {
         this.targetHeading = newHeading;
@@ -398,7 +434,7 @@ function validateCallsign() {
     const callsignInput = document.getElementById('callsignInput');
     const callsign = callsignInput.value.trim();
     const existingBlip = aircraftBlips.find(blip => blip.callsign === callsign);
-    
+
     if (existingBlip || !callsign) {
         callsignInput.style.backgroundColor = '#f8d7da'; // Light red color
         return false;
@@ -650,7 +686,7 @@ function togglePause() {
         pauseButton.textContent = 'Resume';
         updateStatusBar('Exercise paused.');
         disableControlPanel();
-        
+
         rangeRingsContainer.style.animationPlayState = 'paused'; // Stop radar rings rotation
     } else {
         pauseButton.textContent = 'Pause';
@@ -658,7 +694,7 @@ function togglePause() {
         enableControlPanel();
 
         rangeRingsContainer.style.animationPlayState = 'running'; // Resume radar rings rotation
-    
+
         moveAircraftBlips(); // Resume aircraft movements
     }
 }
@@ -683,16 +719,32 @@ function enableControlPanel() {
 document.getElementById('pauseButton').addEventListener('click', togglePause);
 
 
-// Move aircraft blips periodically
+
+
+// Heading update interval set to 1 second (1000 milliseconds)
+const headingUpdateInterval = 1000;  // Update every second
+
+// Function to update the heading and control box every 1 second
+function updateHeadingPeriodically() {
+    aircraftBlips.forEach(blip => {
+        blip.move(true);  // Only update the heading, not the position on the radar
+    });
+
+    setTimeout(updateHeadingPeriodically, headingUpdateInterval);  // Schedule next update
+}
+
+// Start the heading update loop
+updateHeadingPeriodically();
+
+// Function to update aircraft blips' positions every 4 seconds
 function moveAircraftBlips() {
     if (!isPaused) {
-        aircraftBlips.forEach(blip => blip.move());
-        setTimeout(moveAircraftBlips, updateInterval);
+        aircraftBlips.forEach(blip => blip.move(false));  // Update both heading and position
+        setTimeout(moveAircraftBlips, updateInterval);  // Schedule next movement update
     }
 }
 
-
-
+// Start the movement update loop
 moveAircraftBlips();
 
 
@@ -823,6 +875,11 @@ function processCommand(blip) {
     if (headingMatch) {
         const direction = headingMatch[1];
         const targetHeading = parseInt(headingMatch[2], 10);
+
+        // Stop any ongoing orbit when a specific heading is given
+        blip.orbitLeft = false;
+        blip.orbitRight = false;
+
         let turnDirection = null;
 
         if (direction === 'L') {
@@ -836,8 +893,8 @@ function processCommand(blip) {
         }
 
         updateStatusBar(`Aircraft ${blip.callsign} turning ${turnDirection} heading ${blip.targetHeading}°`);
-    } 
-    
+    }
+
     // Handle speed command
     else if (speedMatch) {
         const speed = parseInt(speedMatch[1], 10);
@@ -845,13 +902,13 @@ function processCommand(blip) {
         updateStatusBar(`Aircraft ${blip.callsign} speed set to ${speed} knots.`);
 
         const speedElement = document.getElementById(`speed_${blip.callsign}`);
-        if (speedElement) {
-            speedElement.textContent = `N${blip.speed}`;  // Update speed in control box
-        }
+        //if (speedElement) {
+           // speedElement.textContent = `N${blip.speed}`;  // Update speed in control box
+        //}
 
-        blip.updateLabelInfo();  // Update label with new speed
-    } 
-    
+        //blip.updateLabelInfo();  // Update label with new speed
+    }
+
     // Handle altitude command
     else if (altitudeMatch) {
         const altitude = parseInt(altitudeMatch[1], 10) * 100;
@@ -859,55 +916,67 @@ function processCommand(blip) {
         updateStatusBar(`Aircraft ${blip.callsign} target altitude set to ${altitude} feet.`);
 
         const altitudeElement = document.getElementById(`altitude_${blip.callsign}`);
-        if (altitudeElement) {
-            altitudeElement.textContent = `A${blip.targetAltitude / 100}`;  // Update altitude in control box
-        }
-    } 
-    
+        //if (altitudeElement) {
+           // altitudeElement.textContent = `${blip.targetAltitude / 100}`;  // Update altitude in control box
+        //}
+    }
+
     // Handle vertical climb/descent rate command
     else if (verticalRateMatch) {
         const rate = parseInt(verticalRateMatch[1], 10);
         blip.verticalClimbDescendRate = rate;  // Set vertical climb/descent rate
         updateStatusBar(`Aircraft ${blip.callsign} vertical rate set to ${rate} feet per minute.`);
-    } 
-    
+    }
+
     //Handle SSR code changes commands
     else if (ssrMatch) {
         const newSSRCode = ssrMatch[1];  // Get the SSR code from the command
-    
+
         // Allow duplication for 7500, 7600, and 7700
         if (newSSRCode !== '7500' && newSSRCode !== '7600' && newSSRCode !== '7700') {
             const existingSSR = aircraftBlips.find(blip => blip.ssrCode === newSSRCode);
-    
+
             if (existingSSR && newSSRCode !== '0000') {
                 updateStatusBar(`Duplicate SSR code. Aircraft ${existingSSR.callsign} already squawking ${existingSSR.ssrCode}`);
                 return;
             }
         }
-        
+
         // Update the aircraft's SSR code if it's not a duplicate or is an emergency code
         blip.setSSRCode(newSSRCode);
         updateStatusBar(`Aircraft ${blip.callsign} SSR code set to 3-${newSSRCode}`);
     }
-    
-    
+
+
     // Handle Report Heading command
     else if (command === "RH") {
         updateStatusBar(`Aircraft ${blip.callsign} heading: ${blip.heading}°`);
-    } 
-    
+    }
+
     // Handle aircraft Delete command
     else if (command === "DEL") {
         deleteAircraft(blip);
         updateStatusBar(`Aircraft ${blip.callsign} deleted.`);
-    } 
+    }
 
-    // Handle "ST" command to stop turning
-    else if (command === 'ST') {
-        blip.turnRight = null; // Stop the turn by setting turnRight to null
+    // Handle orbit left (OL) command
+    else if (command === "OL") {
+        blip.startOrbitLeft();
+        updateStatusBar(`Aircraft ${blip.callsign} orbiting left.`);
+    }
+
+    // Handle orbit right (OR) command
+    else if (command === "OR") {
+        blip.startOrbitRight();
+        updateStatusBar(`Aircraft ${blip.callsign} orbiting right.`);
+    }
+
+    // Handle stop turn (ST) command
+    else if (command === "ST") {
+        blip.stopTurn();
         updateStatusBar(`Aircraft ${blip.callsign} stopping turn.`);
     }
-    
+
     //Handle invalid command
     else {
         updateStatusBar(`Invalid command: ${command}.`);

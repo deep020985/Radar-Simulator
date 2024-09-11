@@ -15,3 +15,5 @@ Del: To delete the aircraft
 SSR1000: Set the squawk code to 1000
 
 ST: To make the aircraft stop turning i.e. Wings level
+
+OL/OR: To make the aircraft Orbit Left or Right
