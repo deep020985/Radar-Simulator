@@ -9,26 +9,34 @@ let isPaused = false; // to initialise the exercise pause and resume button
 class AircraftBlip {
     constructor(callsign, heading, speed, altitude, x, y, ssrCode) {
         this.callsign = callsign;
-        this.ssrCode = ssrCode; // Default SSR is 0000
-        this.heading = heading;
-        this.speed = speed;
-        this.targetSpeed = speed;  // Target speed for gradual speed change
-        this.altitude = altitude || 10000;  // Default to 10,000 feet
-        this.targetAltitude = this.altitude;  // Target altitude for gradual climb/descent
-        this.verticalClimbDescendRate = 3000;  // Default rate of 3000 feet per minute
-        this.speedChangeRate = 10;  // Speed change rate: 10 knots per second
-        this.position = { x, y };
-        this.targetHeading = heading;
-        this.headingChangeRate = 2; // Degrees per second
-        this.turning = false;  // New property to manage the turning state
-        //this.turnRight = null; // Track the direction of turn
-        this.element = this.createBlipElement();
-        this.label = this.createLabelElement();
-        this.line = this.createLineElement();
-        this.history = [];
-        this.historyDots = [];
-        this.createHistoryDots();
-        this.updateBlipPosition();
+    this.ssrCode = ssrCode;
+    this.heading = heading;
+    this.speed = speed;
+    this.targetSpeed = speed;
+    this.altitude = altitude || 10000;
+    this.targetAltitude = this.altitude;
+    this.verticalClimbDescendRate = 3000;
+    this.speedChangeRate = 10;
+    this.position = { x, y };
+    this.targetHeading = heading;
+    this.headingChangeRate = 2;
+    this.turning = false;
+    
+    // Create elements (blip, label, line)
+    this.element = this.createBlipElement();
+    this.label = this.createLabelElement();
+    this.line = this.createLineElement();
+    this.history = [];
+    this.historyDots = [];
+
+    // Create history dots
+    this.createHistoryDots();
+
+    // Update positions
+    this.updateBlipPosition();
+
+    // Ensure the color is updated based on SSR
+    this.updateColorBasedOnSSR(); // Call after elements are created
     }
 
 
@@ -50,6 +58,7 @@ class AircraftBlip {
         blip.style.zIndex = '2';
         
         panContainer.appendChild(blip);
+        
         return blip;
     }
     
@@ -165,8 +174,36 @@ class AircraftBlip {
         this.element = this.createBlipElement();
         this.updateBlipPosition();  // Ensure the new blip is positioned correctly
         this.updateLabelInfo();  // Update label info as well
+        this.updateColorBasedOnSSR(); // Apply the color change
         updateControlBox(this);  // Update the control box to reflect the SSR code change
     }
+    
+    updateColorBasedOnSSR() {
+        // Check for emergency codes and set colors
+        if (this.ssrCode === '7500' || this.ssrCode === '7600' || this.ssrCode === '7700') {
+            // Change to red for emergencies
+            this.label.style.color = 'red';
+            this.line.style.backgroundColor = 'red';
+            this.element.style.backgroundColor = 'red';
+    
+            // Change history dots to red
+            this.historyDots.forEach(dot => {
+                dot.style.backgroundColor = 'red';
+            });
+        } else {
+            // Revert back to default colors
+            this.label.style.color = 'yellow';
+            this.line.style.backgroundColor = 'grey';
+            this.element.style.backgroundColor = 'yellow';
+    
+            // Revert history dots to yellow
+            this.historyDots.forEach(dot => {
+                dot.style.backgroundColor = 'yellow';
+            });
+        }
+    }
+    
+    
     
 
 

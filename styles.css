@@ -455,7 +455,7 @@ body, html {
     border-radius: 3px;
     white-space: nowrap;
     font-size: 12px;
-    
+    color: yellow; /* Default label color */
 }
 
 .aircraft-line {
