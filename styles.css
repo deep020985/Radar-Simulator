@@ -189,10 +189,11 @@ body, html {
 
 /* Style for the plus sign */
 .plus-sign {
-    width: 8px; /* Increase width to accommodate the plus sign */
-    height: 8px; /* Increase height to accommodate the plus sign */
+    width: 8px !important;
+    height: 8px !important;
+    background: transparent !important;
+    z-index: 2 !important;
     position: relative;
-    background: transparent;
 }
 
 .plus-sign::before,
@@ -217,6 +218,7 @@ body, html {
     left: 0;
     transform: translateY(-50%);
 }
+
 
 /* Default aircraft blip style */
 .aircraft-blip {

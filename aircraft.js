@@ -46,7 +46,7 @@ class AircraftBlip {
     createBlipElement() {
         const blip = document.createElement('div');
         blip.className = 'aircraft-blip';
-
+        
         // Apply additional class for plus sign if SSR code is '0000'
         if (this.ssrCode === '0000') {
             blip.classList.add('plus-sign'); // Add the plus sign class
@@ -55,12 +55,11 @@ class AircraftBlip {
             blip.classList.add('aircraft-blip'); // Ensure the default box style is applied
             blip.classList.remove('plus-sign'); // Remove the plus sign class if it was previously added
         }
-
+        
         blip.style.position = 'absolute';
         blip.style.zIndex = '2';
-
+        
         panContainer.appendChild(blip);
-
         return blip;
     }
 
@@ -190,7 +189,9 @@ class AircraftBlip {
         this.updateLabelInfo();  // Update label info as well
         this.updateColorBasedOnSSR(); // Apply the color change
         updateControlBox(this);  // Update the control box to reflect the SSR code change
+        console.log(this.ssrCode);
     }
+    
 
     updateColorBasedOnSSR() {
         // Check for emergency codes and set colors
@@ -666,14 +667,7 @@ function panRadar(dx, dy) {
     updateRadarCenter(); // Update center after panning
 }
 
-// Handle radar panning
-function panRadar(dx, dy) {
-    // Code to visually pan the radar
-    panContainer.style.transform = `translate(${dx}px, ${dy}px)`;
 
-    // Do not update radarCenter, as it should always refer to the original center
-    // Keep radarCenter.x and radarCenter.y as the original, unpanned center
-}
 
 
 // Function to pause or resume the exercise
@@ -821,8 +815,6 @@ document.getElementById('historyDots').addEventListener('click', () => {
 });
 
 
-
-
 //Initialize the flag to track the visibility state of the labels
 let labelsVisible = true; // Initial state of label visibility
 
@@ -830,7 +822,6 @@ let labelsVisible = true; // Initial state of label visibility
 document.getElementById('label').classList.add(labelsVisible ? 'active' : 'inactive');
 
 // Toggle the visibility of labels and update the button's appearance
-
 
 //Label button event listener
 document.getElementById('label').addEventListener('click', () => {
