@@ -49,11 +49,13 @@ class AircraftBlip {
         
         // Apply additional class for plus sign if SSR code is '0000'
         if (this.ssrCode === '0000') {
-            blip.classList.add('plus-sign'); // Add the plus sign class
             blip.classList.remove('aircraft-blip'); // Remove the default box class
+            blip.classList.add('plus-sign'); // Add the plus sign class
+            
         } else {
-            blip.classList.add('aircraft-blip'); // Ensure the default box style is applied
             blip.classList.remove('plus-sign'); // Remove the plus sign class if it was previously added
+            blip.classList.add('aircraft-blip'); // Ensure the default box style is applied
+            
         }
         
         blip.style.position = 'absolute';
@@ -189,7 +191,7 @@ class AircraftBlip {
         this.updateLabelInfo();  // Update label info as well
         this.updateColorBasedOnSSR(); // Apply the color change
         updateControlBox(this);  // Update the control box to reflect the SSR code change
-        console.log(this.ssrCode);
+        
     }
     
 
