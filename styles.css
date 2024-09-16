@@ -439,13 +439,14 @@ body, html {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    padding: 10px;
+    padding: 5px;
 }
 
 /* Dialog input fields */
 .dialog input {
     padding: 5px;
-    margin-top: 5px;
+    margin-top: 1px;
+    margin-bottom: 10px;
     width: 100%;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -460,15 +461,61 @@ body, html {
     background-color: #007bff;
     color: white;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
     transition: background-color 0.3s ease;
     width: 100%;
     margin-top: 5px;
     
 }
 
+.dialog label{
+    font-size: 12px;
+    font-weight: bold;
+}
+
 .dialog button:hover {
     background-color: #0056b3;
+}
+
+
+/* Container for radio buttons to display in a grid */
+#ssrFormationContainer {
+    display: grid ;
+    grid-template-columns: repeat(2, 50%) ; /* Creates a grid with 4 columns */
+    gap: 5px ; /* Adjust spacing between radio buttons */
+    margin-top: 5px; /* Optional: margin to add space above the container */
+}
+
+/* Style for labels to ensure proper alignment */
+#ssrFormationContainer label {
+    display: flex;
+    align-items: center ; /* Center the radio buttons and labels vertically */
+    margin: 0 ; /* Remove default margin */
+    padding: 0 ; /* Remove default padding */
+}
+
+
+
+/* Container for radio buttons to display in a grid */
+#formationSizeContainer {
+    display: grid ;
+    grid-template-columns: repeat(4, auto) ; /* Creates a grid with 4 columns */
+    gap: 2px ; /* Adjust spacing between radio buttons */
+    margin-top: 5px; /* Optional: margin to add space above the container */
+}
+
+/* Style for labels to ensure proper alignment */
+#formationSizeContainer label {
+    display: flex;
+    align-items: center ; /* Center the radio buttons and labels vertically */
+    margin: 0 ; /* Remove default margin */
+    padding: 0 ; /* Remove default padding */
+}
+
+/* Reset margin and padding on radio buttons for better alignment */
+#formationSizeContainer input[type="radio"] {
+    margin: 0 ;
+    padding: 0 ;
 }
 
 
