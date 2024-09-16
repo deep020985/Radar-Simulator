@@ -17,6 +17,7 @@ class AircraftBlip {
         this.turning = false;
         this.orbitLeft = false;  // New property for orbiting left
         this.orbitRight = false; // New property for orbiting right
+        this.formationSize = 1;
 
         // Create elements (blip, label, line)
         this.element = this.createBlipElement();

@@ -336,6 +336,10 @@ body, html {
     height: 100%; /* Ensure full height to accommodate expanding elements */
 }
 
+.disabled-panel {
+    pointer-events: none;   /* Disables interactions with all child elements */
+}
+
 /* Control box for each aircraft */
 .control-box {
     border: 1px solid #ccc;
@@ -394,7 +398,7 @@ body, html {
 
 /* Input field in control box */
 .control-box input {
-    width: 60%;
+    width: 40%;
     padding: 5px;
     border-radius: 4px;
     border: 1px solid #ccc;
