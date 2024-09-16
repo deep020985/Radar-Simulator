@@ -17,3 +17,5 @@ SSR1000: Set the squawk code to 1000
 ST: To make the aircraft stop turning i.e. Wings level
 
 OL/OR: To make the aircraft Orbit Left or Right
+
+Check on checkbox adjacent to Formation Leader Command Input in Aircraft Control Panel Box to Split the Formation.
